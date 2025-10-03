@@ -13,7 +13,6 @@
     <div id="root"></div>
     <script type="text/babel">
         const { useState } = React;
-        const { Copy, Check, Settings, Users, MessageSquare, Download } = lucideReact;
 
         const SpaOutreachTool = () => {
           const [activeTab, setActiveTab] = useState('settings');
@@ -25,7 +24,7 @@
             locations: ['New York, NY', 'Los Angeles, CA', 'Miami, FL', 'Chicago, IL', 'Houston, TX'],
             timezones: ['EST', 'CST', 'MST', 'PST'],
             industries: ['Day Spa', 'Medical Spa', 'Wellness Center', 'Resort Spa'],
-            template: `Hello Mr./Ms. <<LastName>>,
+            template: `Hello <<Title>> <<LastName>>,
 
 My name is Matt (Matsvei). I built SpaConcierge (https://www.getspaconcierge.com/) to help spas turn missed calls into booked appointments.
 
@@ -55,13 +54,18 @@ Thanks!`
             setGenerating(true);
             setTimeout(() => {
               const mockLeads = Array.from({ length: settings.count }, (_, i) => {
-                const firstNames = ['Sarah', 'Michael', 'Jennifer', 'David', 'Lisa', 'Robert', 'Emily', 'James', 'Amanda', 'Christopher'];
+                const maleNames = ['Michael', 'David', 'Robert', 'James', 'Christopher', 'John', 'Daniel', 'Matthew', 'Andrew', 'William'];
+                const femaleNames = ['Sarah', 'Jennifer', 'Lisa', 'Emily', 'Amanda', 'Jessica', 'Ashley', 'Nicole', 'Michelle', 'Stephanie'];
                 const lastNames = ['Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor'];
                 const spaNames = ['Serenity', 'Bliss', 'Tranquil', 'Luxe', 'Pure', 'Harmony', 'Essence', 'Zen', 'Radiance', 'Oasis'];
                 const spaTypes = ['Day Spa', 'Medical Spa', 'Wellness Center', 'Resort Spa'];
                 
-                const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+                const isMale = Math.random() > 0.5;
+                const firstName = isMale 
+                  ? maleNames[Math.floor(Math.random() * maleNames.length)]
+                  : femaleNames[Math.floor(Math.random() * femaleNames.length)];
                 const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+                const title = isMale ? 'Mr.' : 'Ms.';
                 const spaName = `${spaNames[Math.floor(Math.random() * spaNames.length)]} ${spaTypes[Math.floor(Math.random() * spaTypes.length)]}`;
                 const location = settings.locations[Math.floor(Math.random() * settings.locations.length)];
                 const timezone = settings.timezones[Math.floor(Math.random() * settings.timezones.length)];
@@ -70,7 +74,8 @@ Thanks!`
                   id: i + 1,
                   firstName,
                   lastName,
-                  title: 'CEO & Founder',
+                  title,
+                  jobTitle: 'CEO & Founder',
                   company: spaName,
                   location,
                   timezone,
@@ -87,6 +92,7 @@ Thanks!`
 
           const generateMessage = (lead) => {
             return settings.template
+              .replace(/<<Title>>/g, lead.title)
               .replace(/<<FirstName>>/g, lead.firstName)
               .replace(/<<LastName>>/g, lead.lastName)
               .replace(/<<Company>>/g, lead.company)
@@ -100,11 +106,12 @@ Thanks!`
           };
 
           const exportToCSV = () => {
-            const headers = ['First Name', 'Last Name', 'Title', 'Company', 'Location', 'Timezone', 'LinkedIn URL', 'Industry', 'Outreach Message'];
+            const headers = ['First Name', 'Last Name', 'Title', 'Job Title', 'Company', 'Location', 'Timezone', 'LinkedIn URL', 'Industry', 'Outreach Message'];
             const rows = leads.map(lead => [
               lead.firstName,
               lead.lastName,
               lead.title,
+              lead.jobTitle,
               lead.company,
               lead.location,
               lead.timezone,
@@ -283,11 +290,15 @@ Thanks!`
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                           <h3 className="font-medium text-blue-900 mb-2">Available Variables:</h3>
                           <div className="flex flex-wrap gap-2">
+                            <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;Title&gt;&gt;</code>
                             <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;FirstName&gt;&gt;</code>
                             <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;LastName&gt;&gt;</code>
                             <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;Company&gt;&gt;</code>
                             <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;Location&gt;&gt;</code>
                           </div>
+                          <p className="text-sm text-gray-600 mt-2">
+                            <strong>Note:</strong> &lt;&lt;Title&gt;&gt; will automatically be "Mr." or "Ms." based on the person's name
+                          </p>
                         </div>
 
                         <div>
@@ -307,6 +318,7 @@ Thanks!`
                           <h3 className="font-medium text-gray-900 mb-2">Preview (with sample data):</h3>
                           <div className="bg-white p-4 rounded border border-gray-300 whitespace-pre-wrap text-sm">
                             {settings.template
+                              .replace(/<<Title>>/g, 'Ms.')
                               .replace(/<<FirstName>>/g, 'Sarah')
                               .replace(/<<LastName>>/g, 'Johnson')
                               .replace(/<<Company>>/g, 'Serenity Day Spa')
@@ -343,8 +355,8 @@ Thanks!`
                                   <div key={lead.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                                     <div className="flex justify-between items-start mb-3">
                                       <div>
-                                        <h4 className="font-medium text-gray-900">{lead.firstName} {lead.lastName}</h4>
-                                        <p className="text-sm text-gray-600">{lead.title} at {lead.company}</p>
+                                        <h4 className="font-medium text-gray-900">{lead.title} {lead.firstName} {lead.lastName}</h4>
+                                        <p className="text-sm text-gray-600">{lead.jobTitle} at {lead.company}</p>
                                         <p className="text-sm text-gray-500">{lead.location} • {lead.timezone} • {lead.industry}</p>
                                         <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
                                           View LinkedIn Profile →
