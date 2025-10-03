@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpaConcierge Outreach Generator</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState } = React;
+        const { Copy, Check, Settings, Users, MessageSquare, Download } = lucideReact;
+
+        const SpaOutreachTool = () => {
+          const [activeTab, setActiveTab] = useState('settings');
+          const [copiedIndex, setCopiedIndex] = useState(null);
+          const [generating, setGenerating] = useState(false);
+          
+          const [settings, setSettings] = useState({
+            count: 50,
+            locations: ['New York, NY', 'Los Angeles, CA', 'Miami, FL', 'Chicago, IL', 'Houston, TX'],
+            timezones: ['EST', 'CST', 'MST', 'PST'],
+            industries: ['Day Spa', 'Medical Spa', 'Wellness Center', 'Resort Spa'],
+            template: `Hello Mr./Ms. <<LastName>>,
+
+My name is Matt (Matsvei). I built SpaConcierge (https://www.getspaconcierge.com/) to help spas turn missed calls into booked appointments.
+
+You can try it free for 2 weeks to see if it's useful.
+
+Would you be open to a quick call to explore how it could work for you?
+
+Thanks!`
+          });
+
+          const [leads, setLeads] = useState([]);
+
+          const usCitiesPreset = [
+            'New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ',
+            'Philadelphia, PA', 'San Antonio, TX', 'San Diego, CA', 'Dallas, TX', 'San Jose, CA',
+            'Austin, TX', 'Jacksonville, FL', 'Fort Worth, TX', 'Columbus, OH', 'Charlotte, NC',
+            'San Francisco, CA', 'Indianapolis, IN', 'Seattle, WA', 'Denver, CO', 'Washington, DC',
+            'Boston, MA', 'El Paso, TX', 'Nashville, TN', 'Detroit, MI', 'Oklahoma City, OK',
+            'Portland, OR', 'Las Vegas, NV', 'Memphis, TN', 'Louisville, KY', 'Baltimore, MD',
+            'Milwaukee, WI', 'Albuquerque, NM', 'Tucson, AZ', 'Fresno, CA', 'Mesa, AZ',
+            'Sacramento, CA', 'Atlanta, GA', 'Kansas City, MO', 'Colorado Springs, CO', 'Miami, FL',
+            'Raleigh, NC', 'Omaha, NE', 'Long Beach, CA', 'Virginia Beach, VA', 'Oakland, CA',
+            'Minneapolis, MN', 'Tulsa, OK', 'Tampa, FL', 'Arlington, TX', 'New Orleans, LA'
+          ];
+
+          const generateLeads = () => {
+            setGenerating(true);
+            setTimeout(() => {
+              const mockLeads = Array.from({ length: settings.count }, (_, i) => {
+                const firstNames = ['Sarah', 'Michael', 'Jennifer', 'David', 'Lisa', 'Robert', 'Emily', 'James', 'Amanda', 'Christopher'];
+                const lastNames = ['Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor'];
+                const spaNames = ['Serenity', 'Bliss', 'Tranquil', 'Luxe', 'Pure', 'Harmony', 'Essence', 'Zen', 'Radiance', 'Oasis'];
+                const spaTypes = ['Day Spa', 'Medical Spa', 'Wellness Center', 'Resort Spa'];
+                
+                const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+                const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+                const spaName = `${spaNames[Math.floor(Math.random() * spaNames.length)]} ${spaTypes[Math.floor(Math.random() * spaTypes.length)]}`;
+                const location = settings.locations[Math.floor(Math.random() * settings.locations.length)];
+                const timezone = settings.timezones[Math.floor(Math.random() * settings.timezones.length)];
+                
+                return {
+                  id: i + 1,
+                  firstName,
+                  lastName,
+                  title: 'CEO & Founder',
+                  company: spaName,
+                  location,
+                  timezone,
+                  linkedinUrl: `https://linkedin.com/in/${firstName.toLowerCase()}-${lastName.toLowerCase()}-${Math.floor(Math.random() * 9999)}`,
+                  industry: settings.industries[Math.floor(Math.random() * settings.industries.length)]
+                };
+              });
+              
+              setLeads(mockLeads);
+              setGenerating(false);
+              setActiveTab('leads');
+            }, 1500);
+          };
+
+          const generateMessage = (lead) => {
+            return settings.template
+              .replace(/<<FirstName>>/g, lead.firstName)
+              .replace(/<<LastName>>/g, lead.lastName)
+              .replace(/<<Company>>/g, lead.company)
+              .replace(/<<Location>>/g, lead.location);
+          };
+
+          const copyMessage = (message, index) => {
+            navigator.clipboard.writeText(message);
+            setCopiedIndex(index);
+            setTimeout(() => setCopiedIndex(null), 2000);
+          };
+
+          const exportToCSV = () => {
+            const headers = ['First Name', 'Last Name', 'Title', 'Company', 'Location', 'Timezone', 'LinkedIn URL', 'Industry', 'Outreach Message'];
+            const rows = leads.map(lead => [
+              lead.firstName,
+              lead.lastName,
+              lead.title,
+              lead.company,
+              lead.location,
+              lead.timezone,
+              lead.linkedinUrl,
+              lead.industry,
+              `"${generateMessage(lead).replace(/"/g, '""')}"`
+            ]);
+            
+            const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `spa-ceos-outreach-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+          };
+
+          // Simple icon components
+          const Icon = ({ children, ...props }) => (
+            <svg {...props} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {children}
+            </svg>
+          );
+
+          const CopyIcon = (props) => <Icon {...props}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></Icon>;
+          const CheckIcon = (props) => <Icon {...props}><polyline points="20 6 9 17 4 12"></polyline></Icon>;
+          const SettingsIcon = (props) => <Icon {...props}><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m5.2-14.8l-4.2 4.2m-6 6l-4.2 4.2M23 12h-6m-6 0H5m14.8 5.2l-4.2-4.2m-6-6l-4.2-4.2"></path></Icon>;
+          const UsersIcon = (props) => <Icon {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
+          const MessageIcon = (props) => <Icon {...props}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></Icon>;
+          const DownloadIcon = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></Icon>;
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+              <div className="max-w-7xl mx-auto">
+                <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                  <h1 className="text-3xl font-bold text-gray-800 mb-2">SpaConcierge Outreach Generator</h1>
+                  <p className="text-gray-600">Generate personalized outreach messages for spa CEOs</p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-lg mb-6">
+                  <div className="flex border-b">
+                    <button
+                      onClick={() => setActiveTab('settings')}
+                      className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
+                        activeTab === 'settings'
+                          ? 'border-b-2 border-blue-500 text-blue-600'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      <SettingsIcon />
+                      Settings
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('template')}
+                      className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
+                        activeTab === 'template'
+                          ? 'border-b-2 border-blue-500 text-blue-600'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      <MessageIcon />
+                      Message Template
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('leads')}
+                      className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
+                        activeTab === 'leads'
+                          ? 'border-b-2 border-blue-500 text-blue-600'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      <UsersIcon />
+                      Generated Leads ({leads.length})
+                    </button>
+                  </div>
+
+                  <div className="p-6">
+                    {activeTab === 'settings' && (
+                      <div className="space-y-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Number of Leads to Generate
+                          </label>
+                          <input
+                            type="number"
+                            value={settings.count}
+                            onChange={(e) => setSettings({...settings, count: parseInt(e.target.value) || 50})}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            min="1"
+                            max="200"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Target Locations
+                          </label>
+                          <div className="flex gap-2 mb-3">
+                            <button
+                              onClick={() => setSettings({...settings, locations: usCitiesPreset})}
+                              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                            >
+                              Load Top 50 US Cities
+                            </button>
+                            <button
+                              onClick={() => setSettings({...settings, locations: []})}
+                              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                          <textarea
+                            value={settings.locations.join('\n')}
+                            onChange={(e) => setSettings({...settings, locations: e.target.value.split('\n').filter(l => l.trim())})}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                            rows="6"
+                            placeholder="Enter locations (one per line)&#10;Example:&#10;New York, NY&#10;Los Angeles, CA"
+                          />
+                          <p className="text-sm text-gray-500 mt-1">{settings.locations.length} locations loaded</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Timezones to Target
+                          </label>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            {['EST', 'CST', 'MST', 'PST', 'AKST', 'HST'].map(tz => (
+                              <label key={tz} className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input
+                                  type="checkbox"
+                                  checked={settings.timezones.includes(tz)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSettings({...settings, timezones: [...settings.timezones, tz]});
+                                    } else {
+                                      setSettings({...settings, timezones: settings.timezones.filter(t => t !== tz)});
+                                    }
+                                  }}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-sm font-medium">{tz}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Spa Industry Types
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {['Day Spa', 'Medical Spa', 'Wellness Center', 'Resort Spa', 'Salon & Spa', 'Destination Spa'].map(industry => (
+                              <label key={industry} className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input
+                                  type="checkbox"
+                                  checked={settings.industries.includes(industry)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSettings({...settings, industries: [...settings.industries, industry]});
+                                    } else {
+                                      setSettings({...settings, industries: settings.industries.filter(i => i !== industry)});
+                                    }
+                                  }}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-sm font-medium">{industry}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'template' && (
+                      <div className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                          <h3 className="font-medium text-blue-900 mb-2">Available Variables:</h3>
+                          <div className="flex flex-wrap gap-2">
+                            <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;FirstName&gt;&gt;</code>
+                            <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;LastName&gt;&gt;</code>
+                            <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;Company&gt;&gt;</code>
+                            <code className="bg-white px-2 py-1 rounded text-sm">&lt;&lt;Location&gt;&gt;</code>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Message Template
+                          </label>
+                          <textarea
+                            value={settings.template}
+                            onChange={(e) => setSettings({...settings, template: e.target.value})}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                            rows="12"
+                            placeholder="Enter your message template here..."
+                          />
+                        </div>
+
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <h3 className="font-medium text-gray-900 mb-2">Preview (with sample data):</h3>
+                          <div className="bg-white p-4 rounded border border-gray-300 whitespace-pre-wrap text-sm">
+                            {settings.template
+                              .replace(/<<FirstName>>/g, 'Sarah')
+                              .replace(/<<LastName>>/g, 'Johnson')
+                              .replace(/<<Company>>/g, 'Serenity Day Spa')
+                              .replace(/<<Location>>/g, 'Miami, FL')}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'leads' && (
+                      <div>
+                        {leads.length === 0 ? (
+                          <div className="text-center py-12">
+                            <UsersIcon className="mx-auto text-gray-400 mb-4" style={{width: 64, height: 64}} />
+                            <h3 className="text-xl font-medium text-gray-700 mb-2">No Leads Generated Yet</h3>
+                            <p className="text-gray-500 mb-6">Configure your settings and generate leads to get started</p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex justify-between items-center mb-4">
+                              <h3 className="text-lg font-medium text-gray-800">Generated Leads: {leads.length}</h3>
+                              <button
+                                onClick={exportToCSV}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                              >
+                                <DownloadIcon />
+                                Export to CSV
+                              </button>
+                            </div>
+                            <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                              {leads.map((lead, index) => {
+                                const message = generateMessage(lead);
+                                return (
+                                  <div key={lead.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                    <div className="flex justify-between items-start mb-3">
+                                      <div>
+                                        <h4 className="font-medium text-gray-900">{lead.firstName} {lead.lastName}</h4>
+                                        <p className="text-sm text-gray-600">{lead.title} at {lead.company}</p>
+                                        <p className="text-sm text-gray-500">{lead.location} • {lead.timezone} • {lead.industry}</p>
+                                        <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                                          View LinkedIn Profile →
+                                        </a>
+                                      </div>
+                                      <button
+                                        onClick={() => copyMessage(message, index)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                                          copiedIndex === index
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                                        }`}
+                                      >
+                                        {copiedIndex === index ? (
+                                          <>
+                                            <CheckIcon />
+                                            Copied!
+                                          </>
+                                        ) : (
+                                          <>
+                                            <CopyIcon />
+                                            Copy Message
+                                          </>
+                                        )}
+                                      </button>
+                                    </div>
+                                    <div className="bg-white p-3 rounded border border-gray-300 text-sm whitespace-pre-wrap">
+                                      {message}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <button
+                    onClick={generateLeads}
+                    disabled={generating}
+                    className={`w-full py-4 rounded-lg font-medium text-lg transition-all ${
+                      generating
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
+                    }`}
+                  >
+                    {generating ? 'Generating Leads...' : `Generate ${settings.count} Spa CEO Leads`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<SpaOutreachTool />, document.getElementById('root'));
+    </script>
+</body>
+</html>
